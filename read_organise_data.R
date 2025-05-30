@@ -27,13 +27,16 @@ flow_data <- raw_flow %>% reframe(date_time = as.POSIXct(Date, format="%d/%m/%Y 
   mutate(flooding = case_when(flow >= 250 ~ 1,
                               flow < 250 ~ 0,
                               qual == 255 ~ 0)) %>% 
-  separate(Date, c("date", "time"), sep = " ") %>% mutate(date = as.Date(date, format = "%d/%m/%Y")) %>%
-  group_by(date) %>% 
+  separate(Date, c("date", "time"), sep = " ") %>% mutate(Date = as.Date(date, format = "%d/%m/%Y")) %>%
+  group_by(Date) %>% 
   mutate(day_flooded = any(flooding == 1)) %>% ungroup() %>% 
-  mutate(last_flood_date = if_else(day_flooded == 1, date, as.Date(NA))) %>%
+  mutate(last_flood_date = if_else(day_flooded == 1, Date, as.Date(NA))) %>%
   fill(last_flood_date, .direction = "down") %>%
-  mutate(days_since_flood = as.integer(date - last_flood_date))
-  
+  mutate(days_since_flood = as.integer(Date - last_flood_date))
+
+days_since_flood <- flow_data[,c("Date", "days_since_flood")]
+
+counts_and_flow <- left_join(UR_data, days_since_flood, by = "Date")
 
 ggplot(data = flow_data, aes(x = date, y = flow, colour= day_flooded)) +
   geom_line()
