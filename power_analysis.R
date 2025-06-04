@@ -4,58 +4,61 @@ library(simr) #power analysis
 library(rptR) #repeatability
 library(MASS) #for glm.nb
 
-source("initial_look.R")
+source("read_organise_data.R")
 
 # set up data ------------------------------------------------------------------
-subset_of_interest <- list(species = c("Wrybill","Black-fronted tern", "Banded dotterel"),
-                           start_year = 2000, end_year = 2025)
-specified_years <- subset(UR_data, Year > subset_of_interest$start_year - 1 &
-                                   Year < subset_of_interest$end_year + 1)
+subset_of_interest <- list(species = c("Wrybill","Black-fronted tern", "Banded dotterel", "Black Stilt/Kakī"),
+                           start_year = 2021, end_year = 2025)
+specified_years <- subset(filled_counts_noDups, Year > subset_of_interest$start_year - 1 &
+                                   Year < subset_of_interest$end_year + 1) 
 
 for (i in 1:length(subset_of_interest$species)) {
   subset_species <- subset(specified_years, Species == subset_of_interest$species[i]) %>%
            group_by(section_number, Year, Hectares) %>% summarise(Number = sum(Number))
   subset_species$section_number <- factor(subset_species$section_number)
   subset_species$centeredYear <- subset_species$Year - min(subset_species$Year)
-  subset_species$logHectare <- log(subset_species$Hectares)
   subset_species$factorYear <- as.factor(subset_species$centeredYear)
-  assign(paste0(gsub(" |-", "_", subset_of_interest$species[i])), subset_species)
+  with_flow <- inner_join(subset_species, flow_and_observers, by = "Year")
+  assign(paste0(gsub(" |-", "_", subset_of_interest$species[i])), with_flow)
 }
 
-ggplot(data = Banded_dotterel,
+ggplot(data = Wrybill,
               aes(x = Year, y = Number, groups = section_number, colour = section_number)) +
          geom_line() +
          geom_point()
 
 # Pilot Models ----------------------------------------------------------------
 # wrybill
-Wrybill_mod <- glmer(Number ~ centeredYear + (1 | section_number), offset = logHectare, family = "poisson",
+Wrybill_poisson <- glmer(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors), family = "poisson",
                       data = Wrybill)
-summary(Wrybill_mod)
+summary(Wrybill_poisson)
 resid_df <- 17
-deviance(Wrybill_mod) / resid_df #dispersion okay
+deviance(Wrybill_poisson) / resid_df
+
+Wrybill_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = log(Hectares),
+         data = Wrybill)
 
 # BFT 
-Black_fronted_tern_poisson <- glmer(Number ~ centeredYear + (1 | section_number), offset = logHectare, family = "poisson",
+Black_fronted_tern_poisson <- glmer(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors), family = "poisson",
                      data = Black_fronted_tern)
 summary(Black_fronted_tern_poisson)
 resid_df <- 17
 deviance(Black_fronted_tern_poisson) / resid_df # overdispersed
 
-Black_fronted_tern_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = logHectare,
+Black_fronted_tern_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors),
                                   data = Black_fronted_tern)
 summary(Black_fronted_tern_NB) #very little variation by section when hectare included- area explains most of section variation?
 resid_df <- 16
 deviance(Black_fronted_tern_NB) / resid_df # dispersion sorted
 
 # Banded dotterel
-Banded_dotterel_poisson <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = logHectare, family = "poisson",
+Banded_dotterel_poisson <- glmer(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors), family = "poisson",
                      data = Banded_dotterel)
 summary(Banded_dotterel_poisson)
 resid_df <- 17
 deviance(Banded_dotterel_poisson) / resid_df # overdispersed
 
-Banded_dotterel_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = logHectare,
+Banded_dotterel_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors),
                                 data = Banded_dotterel)
 summary(Banded_dotterel_NB)
 resid_df <- 16
@@ -74,10 +77,10 @@ summary(wrybill_vca)
 effect_sizes <- seq(-0.1, 0.1, by = 0.05)
 year_range <- 5:20
 
-mod_list <- list(Wrybill = Wrybill_mod, BFT = Black_fronted_tern_NB, Banded_dotterel = Banded_dotterel_NB)
+mod_list <- list(Wrybill = Wrybill_poisson, BFT = Black_fronted_tern_NB)
 power_analyses <- list(NA)
 # loop year*effects 
-for (i in 2:length(mod_list)) {
+for (i in 1:length(mod_list)) {
   results <- expand.grid(effect = effect_sizes, years = year_range)
   results <- results %>% mutate(perc_change = (exp(effect)-1)*100, power = NA, lower = NA, upper = NA)
   for (j in 1:nrow(results)) {
@@ -107,17 +110,16 @@ for (i in 2:length(mod_list)) {
   names(power_analyses)[i] <- names(mod_list)[i]
 }
 #-------------------------------------------------------------------------------
-effect_colours <- c("#050e71", "#3540bd",  "grey", "#a5f7a1", "#0d8007")
-power_analyses[]
-for (i in 2:length(power_analyses)) {
-  ggplot(power_analyses[["Banded_dotterel"]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
-    geom_line() +
-    geom_point() +
-    geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5) +
-    scale_color_gradientn(colours=effect_colours) +
-    geom_hline(yintercept=80, linetype='dashed', col = 'grey')+
-    labs(x = "Number of Years", y = "Power (%)", color = "% Change") +
-    theme_minimal()
-}
+effect_colours <- c("#050e71", "#3540bd",  "grey", "#75ff6e", "#0d8007")
+
+ggplot(power_analyses[["Wrybill"]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5) +
+  scale_color_gradientn(colours=effect_colours) +
+  geom_hline(yintercept=80, linetype='dashed', col = 'darkgrey')+
+  labs(x = "Number of Years", y = "Power (%)", color = "% Change") +
+  theme_minimal()
+
 #------------------------------------------------------------------------------
 
