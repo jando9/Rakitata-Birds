@@ -12,6 +12,24 @@ UR_data$Year <- as.numeric(UR_data$Year)
 head(UR_data)
 UR_data$section_number<- as.factor(UR_data$`section number`)
 
+spp_of_interest <- c("Wrybill","Black-fronted tern", "Banded dotterel", "Black-billed gull",
+                     "Black shag", "Caspian tern", "Little shag", "South Island pied oystercatcher",
+                     "Southern black-backed gull", "Black Stilt/Kakī", "Shag species",
+                     "Hybrid black stilt", "Spur-winged plover", "Swamp harrier", "Pied shag")
+
+section_key <- UR_data %>%  select(Date, section_number, Hectares) %>% distinct()
+
+counts_filled_zeros <- UR_data %>% select(c(Species:Year, Km_code, Hectares:section_number)) %>%
+  complete(Species, Date, fill = list(Number = 0)) %>% 
+  subset(Species %in% spp_of_interest) %>% left_join(section_key, by = c("Date")) %>% 
+  rename(Hectares = Hectares.x, section_number = section_number.x)
+zeros <- subset(counts_filled_zeros, is.na(section_number)) %>% select(-c(Hectares,section_number)) %>%
+  rename(Hectares = Hectares.y, section_number = section_number.y)
+counts_filled_zeros <- counts_filled_zeros %>% select(-c(Hectares.y, section_number.y)) %>%
+  subset(!is.na(section_number))
+filled_counts_noDups <- rbind(counts_filled_zeros,zeros) %>% mutate(Year = year(Date)) %>% distinct()
+  
+
 mean_annual_counts <- UR_data %>% group_by(Species, year = Year) %>% summarize(sum = sum(Number)) %>%
   group_by(Species) %>% summarize(mean_annual = mean(sum))
 
@@ -35,10 +53,20 @@ flow_data <- raw_flow %>% reframe(date_time = as.POSIXct(Date, format="%d/%m/%Y 
   mutate(days_since_flood = as.integer(Date - last_flood_date))
 
 days_since_flood <- flow_data[,c("Date", "days_since_flood")]
+observers <- meta_data[,c("Year","Total People", "Total Days Surveyed", "Mean Daily Surveyors")]
 
-counts_and_flow <- left_join(UR_data, days_since_flood, by = "Date")
+flow_and_observers <- left_join(
+  left_join(UR_data[,c("Date", "Year")],
+            days_since_flood, by = "Date"),
+  observers, by = "Year") %>% select(!Date) %>%  distinct() 
 
-ggplot(data = flow_data, aes(x = date, y = flow, colour= day_flooded)) +
+flow_and_observers <- apply(flow_and_observers, 2, function(x) gsub("Unknown", NA, x))
+flow_and_observers <- as.data.frame(apply(flow_and_observers, 2, as.numeric))
+flow_and_observers <- flow_and_observers %>% group_by(Year) %>%
+  summarise(mean_days_since_flood = mean(days_since_flood), total_surveyors = mean(`Total People`),
+            total_days_surveyed = mean(`Total Days Surveyed`), mean_daily_surveyors = mean(`Mean Daily Surveyors`))
+
+ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
   geom_line()
 
 
@@ -61,10 +89,11 @@ ggplot(data = flow_data, aes(x = date, y = flow, colour= day_flooded)) +
 #   geom_point()
 # 
 # # all species ------------------------------------------------------------------
-# ggplot(data = sum_counts_by_year, aes(x = year, y = sum, group = Species)) +
-#   geom_line() +
-#   geom_point() +
-#   facet_wrap(~Species, scales = "free_y")
+ggplot(data = subset(by_section, Species %in% spp_of_interest), aes(x = year, y = sum, group=section_number, colour = section_number)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~Species, scales = "free_y")
+
 # 
 # ggplot(data = subset(by_section, year > 2020), aes(x = year, y = sum, group=section_number, colour = section_number)) +
 #   geom_line() +
