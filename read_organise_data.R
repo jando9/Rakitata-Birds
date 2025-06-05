@@ -5,6 +5,7 @@ library(tidyr)
 library(ggplot2)
 library(lattice)
 
+## Reading in, cleaning and wrangling data -------------------------------------
 #count data
 UR_data <- read_excel("data/RangitataUpperCounts.xlsx", sheet = "BirdCountData")
 UR_data$Species <- as.factor(UR_data$Species)
@@ -29,7 +30,6 @@ counts_filled_zeros <- counts_filled_zeros %>% select(-c(Hectares.y, section_num
   subset(!is.na(section_number))
 filled_counts_noDups <- rbind(counts_filled_zeros,zeros) %>% mutate(Year = year(Date)) %>% distinct()
   
-
 mean_annual_counts <- UR_data %>% group_by(Species, year = Year) %>% summarize(sum = sum(Number)) %>%
   group_by(Species) %>% summarize(mean_annual = mean(sum))
 
@@ -41,7 +41,8 @@ meta_data <- read_excel("data/RangitataUpperCounts.xlsx", sheet = "Survey Metada
 raw_flow <- rbind(read.csv("data/2000.01.01_2015.04.08_flowdata.csv", skip = 2),
                    read.csv("data/2015.04.08_2025.03.27_flowdata.csv", skip = 2))
 flow_data <- raw_flow %>% separate(Date, c("date", "time"), sep = " ")
-flow_data <- raw_flow %>% reframe(date_time = as.POSIXct(Date, format="%d/%m/%Y %H:%M"), flow = Inst, qual = Qual, Date = Date) %>% 
+flow_data <- raw_flow %>% reframe(date_time = as.POSIXct(Date, format="%d/%m/%Y %H:%M"),
+                                  flow = Inst, qual = Qual, Date = Date) %>% 
   mutate(flooding = case_when(flow >= 250 ~ 1,
                               flow < 250 ~ 0,
                               qual == 255 ~ 0)) %>% 
@@ -66,6 +67,7 @@ flow_and_observers <- flow_and_observers %>% group_by(Year) %>%
   summarise(mean_days_since_flood = mean(days_since_flood), total_surveyors = mean(`Total People`),
             total_days_surveyed = mean(`Total Days Surveyed`), mean_daily_surveyors = mean(`Mean Daily Surveyors`))
 
+## Visualisation ---------------------------------------------------------------
 ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
   geom_line()
 
@@ -77,7 +79,7 @@ ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
 # BFT_wrybill <- left_join(subset(sum_counts_by_year, Species == "Black-fronted tern" | Species == "Wrybill"),
 #                          subset(mean_counts_by_year, Species == "Black-fronted tern" | Species == "Wrybill"))
 #                      
-# # BFT and wrybill --------------------------------------------------------------
+
 # ggplot(data = BFT_wrybill,
 #        aes(x = year, y = mean, colour = Species)) +
 #   geom_line() +

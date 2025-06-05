@@ -4,9 +4,10 @@ library(simr) #power analysis
 library(rptR) #repeatability
 library(MASS) #for glm.nb
 
+
 source("read_organise_data.R")
 
-# set up data ------------------------------------------------------------------
+## set up data ------------------------------------------------------------------
 subset_of_interest <- list(species = c("Wrybill","Black-fronted tern", "Banded dotterel", "Black Stilt/Kakī"),
                            start_year = 2021, end_year = 2025)
 specified_years <- subset(filled_counts_noDups, Year > subset_of_interest$start_year - 1 &
@@ -27,15 +28,42 @@ ggplot(data = Wrybill,
          geom_line() +
          geom_point()
 
-# Pilot Models ----------------------------------------------------------------
-# wrybill
-Wrybill_poisson <- glmer(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors), family = "poisson",
-                      data = Wrybill)
-summary(Wrybill_poisson)
-resid_df <- 17
-deviance(Wrybill_poisson) / resid_df
+section_plot <- UR_data %>% distinct(Year, section_number) %>%
+  mutate(one = case_when(grepl("1", section_number) ~ 1,
+                         !grepl("1", section_number) ~ 0),
+         two = case_when(grepl("2", section_number) ~ 1,
+                         !grepl("2", section_number) ~ 0),
+         three = case_when(grepl("3", section_number) ~ 1,
+                         !grepl("3", section_number) ~ 0),
+         four = case_when(grepl("4", section_number) ~ 1,
+                         !grepl("4", section_number) ~ 0),
+         five = case_when(grepl("5", section_number) ~ 1,
+                         !grepl("5", section_number) ~ 0)) %>%
+  pivot_longer(one:five, names_to = "current_sections", values_to = "presence") %>% 
+  subset(presence == 1) %>% mutate(current_sections = factor(current_sections, levels = c("five", "four", "three", "two", "one")))
+  
+  ggplot(data = section_plot,
+         aes(x = Year, y = current_sections, fill = section_number)) +
+  geom_tile(colour = "white", linewidth = 1.2,) 
 
-Wrybill_NB <- glmer.nb(Number ~ centeredYear + (1 | section_number), offset = log(Hectares),
+
+## Pilot Models ----------------------------------------------------------------
+# wrybill
+Wrybill_random_slope <- glmer(Number ~ centeredYear + (centeredYear | section_number), offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+                      data = Wrybill)
+
+Wrybill_fixed_slope <- glmer(Number ~ centeredYear + (1 | section_number), offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+                             data = Wrybill)
+
+summary(Wrybill_random_slope)
+resid_df <- 15
+deviance(Wrybill_random_slope) / resid_df 
+
+AIC(Wrybill_random_slope, Wrybill_fixed_slope)
+BIC(Wrybill_random_slope, Wrybill_fixed_slope)
+
+
+Wrybill_NB <- glmer.(Number ~ centeredYear + (1 | section_number), offset = log(Hectares),
          data = Wrybill)
 
 # BFT 

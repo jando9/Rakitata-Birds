@@ -6,7 +6,7 @@ source("read_organise_data.R")
 
 # set up data ------------------------------------------------------------------
 subset_of_interest <- list(species = c("Wrybill","Black-fronted tern", "Banded dotterel"),
-                           start_year = 1980, end_year = 2025)
+                           start_year = 1986, end_year = 2025)
 specified_years <- subset(filled_counts_noDups, Year > subset_of_interest$start_year - 1 &
                             Year < subset_of_interest$end_year + 1)
 
