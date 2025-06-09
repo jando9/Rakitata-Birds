@@ -5,7 +5,8 @@ library(tidyr)
 library(ggplot2)
 library(lattice)
 
-## Reading in, cleaning and wrangling data -------------------------------------
+
+# Reading in, cleaning and wrangling data --------------------------------------
 #count data
 UR_data <- read_excel("data/RangitataUpperCounts.xlsx", sheet = "BirdCountData")
 UR_data$Species <- as.factor(UR_data$Species)
@@ -22,13 +23,20 @@ section_key <- UR_data %>%  select(Date, section_number, Hectares) %>% distinct(
 
 counts_filled_zeros <- UR_data %>% select(c(Species:Year, Km_code, Hectares:section_number)) %>%
   complete(Species, Date, fill = list(Number = 0)) %>% 
-  subset(Species %in% spp_of_interest) %>% left_join(section_key, by = c("Date")) %>% 
-  rename(Hectares = Hectares.x, section_number = section_number.x)
-zeros <- subset(counts_filled_zeros, is.na(section_number)) %>% select(-c(Hectares,section_number)) %>%
-  rename(Hectares = Hectares.y, section_number = section_number.y)
-counts_filled_zeros <- counts_filled_zeros %>% select(-c(Hectares.y, section_number.y)) %>%
-  subset(!is.na(section_number))
-filled_counts_noDups <- rbind(counts_filled_zeros,zeros) %>% mutate(Year = year(Date)) %>% distinct()
+  subset(Species %in% spp_of_interest) %>% left_join(section_key, by = c("Date"),
+                                                     relationship = "many-to-many") %>%
+  mutate(Number = case_when(section_number.x == section_number.y ~ Number,
+                            section_number.x != section_number.y ~ 0),
+         Year = year(Date)) %>%
+  replace_na(list(Number = 0)) %>% 
+  rename(Hectares = Hectares.y, section_number = section_number.y) %>% select(-c(section_number.x, Hectares.x, Km_code)) %>% 
+  distinct()
+
+# zeros <- subset(counts_filled_zeros, is.na(section_number)) %>% select(-c(Hectares,section_number)) %>%
+#   rename(Hectares = Hectares.y, section_number = section_number.y)
+# counts_filled_zeros <- counts_filled_zeros %>% select(-c(Hectares.x, section_number.x)) %>%
+#   subset(!is.na(section_number))
+# filled_counts_noDups <- rbind(counts_filled_zeros,zeros) %>% mutate(Year = year(Date)) %>% distinct()
   
 mean_annual_counts <- UR_data %>% group_by(Species, year = Year) %>% summarize(sum = sum(Number)) %>%
   group_by(Species) %>% summarize(mean_annual = mean(sum))
@@ -58,7 +66,7 @@ observers <- meta_data[,c("Year","Total People", "Total Days Surveyed", "Mean Da
 
 flow_and_observers <- left_join(
   left_join(UR_data[,c("Date", "Year")],
-            days_since_flood, by = "Date"),
+            days_since_flood, by = "Date", relationship = "many-to-many"),
   observers, by = "Year") %>% select(!Date) %>%  distinct() 
 
 flow_and_observers <- apply(flow_and_observers, 2, function(x) gsub("Unknown", NA, x))
@@ -67,40 +75,53 @@ flow_and_observers <- flow_and_observers %>% group_by(Year) %>%
   summarise(mean_days_since_flood = mean(days_since_flood), total_surveyors = mean(`Total People`),
             total_days_surveyed = mean(`Total Days Surveyed`), mean_daily_surveyors = mean(`Mean Daily Surveyors`))
 
-## Visualisation ---------------------------------------------------------------
-ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
-  geom_line()
+# Set up data ------------------------------------------------------------------
+subset_of_interest <- list(species = spp_of_interest,
+                           start_year = 2021, end_year = 2025)
+specified_years <- subset(counts_filled_zeros, Year > subset_of_interest$start_year - 1 &
+                            Year < subset_of_interest$end_year + 1) 
 
+for (i in 1:length(subset_of_interest$species)) {
+  subset_species <- subset(specified_years, Species == subset_of_interest$species[i]) %>%
+    group_by(section_number, Year, Hectares) %>% summarise(Number = sum(Number))
+  subset_species$section_number <- factor(subset_species$section_number)
+  subset_species$centeredYear <- subset_species$Year - min(subset_species$Year)
+  subset_species$factorYear <- as.factor(subset_species$centeredYear)
+  with_flow <- inner_join(subset_species, flow_and_observers, by = "Year")
+  assign(paste0(gsub(" |-", "_", subset_of_interest$species[i])), with_flow)
+}
 
-# wide_date_by_spp <- UR_data %>% group_by(Species, Date) %>% reframe(count= Number, Date=as.Date(as.character(Date))) %>%
-#   pivot_wider(names_from = Species, values_from = count, values_fn = sum) %>% replace(is.na(.),0)
+# Visualisation ----------------------------------------------------------------
+# sections sampled
+section_plot <- UR_data %>% distinct(Year, section_number) %>%
+  mutate(one = case_when(grepl("1", section_number) ~ 1,
+                         !grepl("1", section_number) ~ 0),
+         two = case_when(grepl("2", section_number) ~ 1,
+                         !grepl("2", section_number) ~ 0),
+         three = case_when(grepl("3", section_number) ~ 1,
+                           !grepl("3", section_number) ~ 0),
+         four = case_when(grepl("4", section_number) ~ 1,
+                          !grepl("4", section_number) ~ 0),
+         five = case_when(grepl("5", section_number) ~ 1,
+                          !grepl("5", section_number) ~ 0)) %>%
+  pivot_longer(one:five, names_to = "current_sections", values_to = "presence") %>% 
+  subset(presence == 1) %>% mutate(current_sections = factor(current_sections, levels = c("five", "four", "three", "two", "one")))
 
+ggplot(data = section_plot,
+       aes(x = Year, y = current_sections, fill = section_number)) +
+  geom_tile(colour = "white", linewidth = 1.2) +
+  labs(fill = "Old Sections", y = "Current Sections")
+  
 
-# BFT_wrybill <- left_join(subset(sum_counts_by_year, Species == "Black-fronted tern" | Species == "Wrybill"),
-#                          subset(mean_counts_by_year, Species == "Black-fronted tern" | Species == "Wrybill"))
-#                      
-
-# ggplot(data = BFT_wrybill,
-#        aes(x = year, y = mean, colour = Species)) +
-#   geom_line() +
-#   geom_point()
-# 
-# ggplot(data = BFT_wrybill,
-#        aes(x = year, y = sum, groups = Species, colour = Species)) +
-#   geom_line() +
-#   geom_point()
-# 
-# # all species ------------------------------------------------------------------
+# all species over time
 ggplot(data = subset(by_section, Species %in% spp_of_interest), aes(x = year, y = sum, group=section_number, colour = section_number)) +
   geom_line() +
   geom_point() +
   facet_wrap(~Species, scales = "free_y")
 
-# 
-# ggplot(data = subset(by_section, year > 2020), aes(x = year, y = sum, group=section_number, colour = section_number)) +
-#   geom_line() +
-#   geom_point() +
-#   facet_wrap(~Species, scales = "free_y")
+# flow
+ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
+  geom_line()
 
 
 
