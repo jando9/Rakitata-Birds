@@ -5,9 +5,9 @@ library(ggplot2)
 source("read_organise_data.R")
 
 # set up data ------------------------------------------------------------------
-subset_of_interest <- list(species = c("Wrybill","Black-fronted tern", "Banded dotterel"),
+subset_of_interest <- list(species = spp_of_interest,
                            start_year = 1986, end_year = 2025)
-specified_years <- subset(filled_counts_noDups, Year > subset_of_interest$start_year - 1 &
+specified_years <- subset(counts_filled_zeros, Year > subset_of_interest$start_year - 1 &
                             Year < subset_of_interest$end_year + 1)
 
 for (i in 1:length(subset_of_interest$species)) {
@@ -25,37 +25,57 @@ ggplot(data = Wrybill,
   geom_line() +
   geom_point()
 
-## Try splitting categories by proportion of area
+# Try splitting categories by proportion of area -------------------------------
+# Calculate proportions
 after2021_sections <- subset(section_key, year(Date) > 2021)
 full_area <- sum(unique(after2021_sections$Hectares))
-sections_to_fix <- c("Part of 1", "Part of  1, part of  2", "2,3,4", "1,2", "2,3", "Part of  1, 2")
+sections_to_fix <- c("Part of  1", "Part of  1, part of  2", "2,3,4", "1,2", "2,3", "Part of  1, 2")
 
-part1 <- 1
-part1_part2 <- unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
-                  section_key$Hectares[section_key$section_number=="Part of  1, part of  2"],
-                  two=section_key$Hectares[section_key$section_number=="2"]/
-                  section_key$Hectares[section_key$section_number=="Part of  1, part of  2"]))
-sect_234 <- unique(c(two=section_key$Hectares[section_key$section_number=="2"]/
-              section_key$Hectares[section_key$section_number=="2,3,4"],
-              three=section_key$Hectares[section_key$section_number=="3"]/
-              section_key$Hectares[section_key$section_number=="2,3,4"],
-              four=section_key$Hectares[section_key$section_number=="4"]/
-              section_key$Hectares[section_key$section_number=="2,3,4"]))
-sect_12 <- unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
-             section_key$Hectares[section_key$section_number=="1,2"],
-             two=section_key$Hectares[section_key$section_number=="2"]/
-             section_key$Hectares[section_key$section_number=="1,2"]))
-sect_23 <- unique(c(two=section_key$Hectares[section_key$section_number=="2"]/
-                    unique(section_key$Hectares[section_key$section_number=="2,3"]),
-                    three=section_key$Hectares[section_key$section_number=="3"]/
-                    unique(section_key$Hectares[section_key$section_number=="2,3"])))
-part1_2 <- unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
-                      section_key$Hectares[section_key$section_number=="Part of  1, 2"],
+proportions <- list(
+  1,
+  unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
+                    section_key$Hectares[section_key$section_number=="Part of  1, part of  2"],
                     two=section_key$Hectares[section_key$section_number=="2"]/
-                      section_key$Hectares[section_key$section_number=="Part of  1, 2"]))
+                    section_key$Hectares[section_key$section_number=="Part of  1, part of  2"])),
+  unique(c(two=section_key$Hectares[section_key$section_number=="2"]/
+                section_key$Hectares[section_key$section_number=="2,3,4"],
+                three=section_key$Hectares[section_key$section_number=="3"]/
+                section_key$Hectares[section_key$section_number=="2,3,4"],
+                four=section_key$Hectares[section_key$section_number=="4"]/
+                section_key$Hectares[section_key$section_number=="2,3,4"])),
+  unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
+               section_key$Hectares[section_key$section_number=="1,2"],
+               two=section_key$Hectares[section_key$section_number=="2"]/
+               section_key$Hectares[section_key$section_number=="1,2"])),
+  unique(c(two=section_key$Hectares[section_key$section_number=="2"]/
+                      unique(section_key$Hectares[section_key$section_number=="2,3"]),
+                      three=section_key$Hectares[section_key$section_number=="3"]/
+                      unique(section_key$Hectares[section_key$section_number=="2,3"]))),
+  unique(c(one=section_key$Hectares[section_key$section_number=="1"]/
+                        section_key$Hectares[section_key$section_number=="Part of  1, 2"],
+                      two=section_key$Hectares[section_key$section_number=="2"]/
+                        section_key$Hectares[section_key$section_number=="Part of  1, 2"]))
+)
+names(proportions) <- sections_to_fix
 
-# need to split sections up and multiply by these proportions above
-                                                 
+# multiply numbers by proportions
+# need to generalise to run for all species
+fixed_sections <- data.frame(NULL)
+for (i in 1:length(proportions)) {
+  
+  fixing_section <- Wrybill %>% subset(section_number == names(proportions[i]))
+  fixing_section <- fixing_section[rep(row.names(fixing_section), times = length(proportions[[i]])), ] %>%
+    mutate(Number = Number * proportions[[i]],
+           section_number = seq(1,length(proportions[[i]]))) %>% 
+    mutate(section_number = case_when(names(proportions[i]) == "2,3,4" |
+                                      names(proportions[i]) == "2,3" ~ section_number + 1,
+                                      names(proportions[i]) == "Part  of 1" ~ 1,
+                                      .default = section_number))
+  fixed_sections <- rbind(fixed_sections, fixing_section)
+}
+fixed_sections$section_number <- as.factor(fixed_sections$section_number)
+full_data_wrybill <- rbind(Wrybill %>% subset(!section_number %in% names(proportions)), fixed_sections)
+
 
 
 
