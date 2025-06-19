@@ -82,16 +82,19 @@ specified_years <- subset(counts_filled_zeros, Year > subset_of_interest$start_y
                             Year < subset_of_interest$end_year + 1) 
 
 for (i in 1:length(subset_of_interest$species)) {
-  subset_species <- subset(specified_years, Species == subset_of_interest$species[i]) %>%
+  subset_species <- subset(specified_years, Species == subset_of_interest$species[i]) %>% 
     group_by(section_number, Year, Hectares) %>% summarise(Number = sum(Number))
   subset_species$section_number <- factor(subset_species$section_number)
   subset_species$centeredYear <- subset_species$Year - min(subset_species$Year)
   subset_species$factorYear <- as.factor(subset_species$centeredYear)
   with_flow <- inner_join(subset_species, flow_and_observers, by = "Year")
-  assign(paste0(gsub(" |-", "_", subset_of_interest$species[i])), with_flow)
+  if(median(with_flow$Number) > 3) {
+     assign(paste0(gsub(" |-|/", "_", subset_of_interest$species[i])), with_flow)
+   }
 }
 
 # Visualisation ----------------------------------------------------------------
+
 # sections sampled
 section_plot <- UR_data %>% distinct(Year, section_number) %>%
   mutate(one = case_when(grepl("1", section_number) ~ 1,

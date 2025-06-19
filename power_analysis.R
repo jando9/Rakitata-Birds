@@ -3,7 +3,10 @@ library(simr) #power analysis
 library(rptR) #repeatability
 library(MASS) #for glm.nb
 
-# Source Pilot Models
+# Source Data
+source("read_organise_data.R")
+
+# Source Test Models
 model_files <- list.files(path = "species_models", full.names = T)
 sapply(model_files, source)
 
@@ -11,7 +14,9 @@ sapply(model_files, source)
 effect_sizes <- seq(-0.1, 0.1, by = 0.05)
 year_range <- 5:20
 
-mod_list <- list()
+mod_list <- list(wrybill = wrybill_testMod, BFT = BFT_testMod, Banded_dotterel = Banded_dotterel_testMod,
+                 Black_billed_gull = Black_billed_gull_testMod, SBBG = SBBG_testMod, SIPO = SIPO_testMod,
+                 Spur_winged_plover = Spur_winged_plover_testMod)
 power_analyses <- list(NA)
 # loop year*effects 
 for (i in 1:length(mod_list)) {
@@ -43,15 +48,17 @@ for (i in 1:length(mod_list)) {
   power_analyses[[i]] <- results
   names(power_analyses)[i] <- names(mod_list)[i]
 }
-# Visualize
-effect_colours <- c("#050e71", "#3540bd",  "grey", "#75ff6e", "#0d8007")
 
-ggplot(power_analyses[["Wrybill"]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
+# Visualize
+effect_colours <- c("#7b3294", "#c2a5cf",  "grey90", "#a6dba0", "#008837")
+
+
+ggplot(power_analyses[[]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
   geom_line() +
   geom_point() +
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5) +
   scale_color_gradientn(colours=effect_colours) +
-  geom_hline(yintercept=80, linetype='dashed', col = 'darkgrey')+
+  geom_hline(yintercept=80, linetype='dashed', col = 'grey20')+
   labs(x = "Number of Years", y = "Power (%)", color = "% Change") +
   theme_minimal()
 
