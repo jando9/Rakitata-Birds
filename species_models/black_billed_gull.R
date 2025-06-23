@@ -66,7 +66,7 @@ Black_billed_gull_pred <- Black_billed_gull_pred %>%  mutate(Conditional = predi
   pivot_longer(cols = c(Conditional, Marginal), names_to = "type", values_to = "preds")
 
 ggplot(Black_billed_gull, aes(x = Year, y = (Number/(mean_daily_surveyors*Hectares)))) +
-  ylab("Count per Surveyor*Hectare") + xlab("Year") +
+  ylab("Black Billed Gull per Surveyor*Hectare") + xlab("Year") +
   geom_point(aes(colour = section_number)) +
   geom_line(data = Black_billed_gull_pred, aes(x = centeredYear + min(Year), y = preds, linetype = type,
                                              size = type,
@@ -74,7 +74,9 @@ ggplot(Black_billed_gull, aes(x = Year, y = (Number/(mean_daily_surveyors*Hectar
                                                             section_number,
                                                             type))) +
   scale_color_discrete(limits = c("1","2","3","4","5"), na.value = "black") +
-  scale_size_manual("type", values = c(0.8,1.5), guide = "none") +
+  scale_size_manual("type", values = c(0.8,1.3), guide = "none") +
   scale_linetype_manual(values = c(2,1)) +
-  labs(colour = "Section Number", linetype = "Model")
+  labs(colour = "Section Number", linetype = "Model") +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = alpha("grey", 0.4)))
 

@@ -50,18 +50,44 @@ for (i in 1:length(mod_list)) {
 }
 
 # Visualize
+file_names <- list.files("power_analyses")
+file_dir <- paste0("power_analyses/", file_names)
+power_analyses <- lapply(file_dir, read.csv)
+names(power_analyses) <- file_names
+names(file_names) <- c("Banded Dotterel ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "Banded Dotterel ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "Black Fronted Tern ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "Black Fronted Tern ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "Black Billed Gull ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "Black Billed Gull ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "Southern Black Backed Gull ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "Southern Black Backed Gull ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "South Island Pied Oystercatcher ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "South Island Pied Oystercatcher ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "Spur Winged Plover ~ Years + (1 | Section Number), offset = log(Hectares), Family = Negative Binomial",
+                       "Spur Winged Plover ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Negative Binomial",
+                       "Wrybill ~ Years + (1 | Section Number), offset = log(Hectares), Family = Poisson",
+                         "Wrybill ~ Years + (1 | Section Number), offset = log(Hectares * Mean Daily Observers), Family = Poisson")
+
+column_names <- colnames(power_analyses[[1]])
+power_analyses <- lapply(power_analyses, setNames, column_names)
+
 effect_colours <- c("#7b3294", "#c2a5cf",  "grey90", "#a6dba0", "#008837")
-
-
-ggplot(power_analyses[[]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
-  geom_line() +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5) +
-  scale_color_gradientn(colours=effect_colours) +
-  geom_hline(yintercept=80, linetype='dashed', col = 'grey20')+
-  labs(x = "Number of Years", y = "Power (%)", color = "% Change") +
-  theme_minimal()
-
+for(i in 1:length(power_analyses)){
+  assign(paste0(gsub(".csv", "",names(power_analyses)[i]), "_plot"),
+         ggplot(power_analyses[[i]], aes(x = years, y = power, colour = perc_change, group = perc_change)) +
+               geom_line() +
+               geom_point() +
+               geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5) +
+               scale_color_gradientn(colours=effect_colours) +
+               geom_hline(yintercept=80, linetype='dashed', col = 'grey20')+
+               labs(x = "Years of Data", y = "Power (%)", color = "% Change",
+                    title = names(file_names[i])) +
+               theme(plot.title = element_text(size = 11),
+                     panel.background = element_rect(fill = "white"),
+                     panel.grid = element_line(colour = alpha("grey", 0.4)))
+  )
+}
 
 # Repeatability analysis -------------------------------------------------------
 wrybill_repeat <- rpt(Number ~ (1|section_number), grname = "section_number",
