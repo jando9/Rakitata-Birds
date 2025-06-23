@@ -4,6 +4,9 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(lattice)
+library(afex) #checking convergence issues
+
+source("code/functions.R")
 
 
 # Reading in, cleaning and wrangling data --------------------------------------
@@ -88,7 +91,7 @@ for (i in 1:length(subset_of_interest$species)) {
   subset_species$centeredYear <- subset_species$Year - min(subset_species$Year)
   subset_species$factorYear <- as.factor(subset_species$centeredYear)
   with_flow <- inner_join(subset_species, flow_and_observers, by = "Year")
-  if(median(with_flow$Number) > 4) {
+  if(median(with_flow$Number) >= 5) {
      assign(paste0(gsub(" |-|/", "_", subset_of_interest$species[i])), with_flow)
    }
 }

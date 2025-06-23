@@ -4,7 +4,7 @@ library(rptR) #repeatability
 library(MASS) #for glm.nb
 
 # Source Data
-source("read_organise_data.R")
+source("code/read_organise_data.R")
 
 # Source Test Models
 model_files <- list.files(path = "species_models", full.names = T)
