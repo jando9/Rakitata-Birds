@@ -1,19 +1,20 @@
-#source("read_organise_data.R")
+#source("code/read_organise_data.R")
 library(lme4)
 library(ggplot2)
+library(ggeffects)
 
 ggplot(data = Wrybill,
-       aes(x = Year, y = (Number/(mean_daily_surveyors * Hectares)), groups = section_number, colour = section_number)) +
+       aes(x = Year, y = (Number/(mean_daily_surveyors)), groups = section_number, colour = section_number)) +
   geom_line() +
   geom_point()
 
 # Random effect selection ------------------------------------------------------
-Wrybill_random_slope <- glmer(Number ~ centeredYear + (centeredYear | section_number),
-                              offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+Wrybill_random_slope <- glmer(Number ~ scaledYear + (scaledYear | section_number),
+                              offset = log(mean_daily_surveyors), family = "poisson",
                               data = Wrybill)
 
-Wrybill_fixed_slope <- glmer(Number ~ centeredYear + (1 | section_number),
-                             offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+Wrybill_fixed_slope <- glmer(Number ~ scaledYear + (1 | section_number),
+                             offset = log(mean_daily_surveyors), family = "poisson",
                              data = Wrybill)
 
 # Check overdispersion
@@ -31,32 +32,51 @@ BIC(Wrybill_random_slope, Wrybill_fixed_slope)
 
 # Fixed effects selection ------------------------------------------------------
 
-Wrybill_max <- glmer(Number ~ centeredYear + log(mean_days_since_flood) + (1 | section_number),
-                             offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+Wrybill_year_flood_int <- glmer(Number ~ scaledYear * scaledFlood + (1 | section_number),
+                             offset = log(mean_daily_surveyors), family = "poisson",
                              data = Wrybill)
-Wrybill_years_only <- glmer(Number ~ centeredYear + (1 | section_number),
-                     offset = log(mean_daily_surveyors*Hectares), family = "poisson",
+Wrybill_year_flow_int <- glmer(Number ~ scaledYear * scaledMeanFlow + (1 | section_number),
+                     offset = log(mean_daily_surveyors), family = "poisson",
                      data = Wrybill)
-AIC(Wrybill_max, Wrybill_years_only)
-BIC(Wrybill_max, Wrybill_years_only) # both show year only model is better
+Wrybill_year_flood <- glmer(Number ~ scaledYear + scaledFlood + (1 | section_number),
+                            offset = log(mean_daily_surveyors), family = "poisson",
+                            data = Wrybill)
+Wrybill_year_flow <- glmer(Number ~ scaledYear + scaledMeanFlow + (1 | section_number),
+                            offset = log(mean_daily_surveyors), family = "poisson",
+                            data = Wrybill)
+Wrybill_years_only <- glmer(Number ~ scaledYear + (1 | section_number),
+                     offset = log(mean_daily_surveyors), family = "poisson",
+                     data = Wrybill)
+
+AIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)
+BIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only) 
+
+r.squaredGLMM(Wrybill_year_flow)
 
 summary(Wrybill_years_only)
 
-wrybill_testMod <- Wrybill_years_only
+Wrybill_testMod <- Wrybill_years_only
+r2_Wrybill <- data.frame(R2M = r.squaredGLMM(Wrybill_testMod)[3,1],R2C = r.squaredGLMM(Wrybill_testMod)[3,2], species = "Wrybill")
+
 
 # Visualisation of Model -------------------------------------------------------
 
-wrybill_pred <- expand.grid(centeredYear = seq(min(Wrybill$centeredYear), max(Wrybill$centeredYear)),
-                                     Year = seq(min(Wrybill$Year), max(Wrybill$Year)),
-                                     section_number = factor(seq(1,5))) 
-wrybill_pred <- wrybill_pred %>%  mutate(Conditional = predict(wrybill_testMod, type = "response", newdata = wrybill_pred, re.form = NULL),
-         Marginal = predict(wrybill_testMod, type = "response", newdata = wrybill_pred, re.form = NA)) %>% 
-  pivot_longer(cols = c(Conditional, Marginal), names_to = "type", values_to = "preds")
+Wrybill_pred <- expand.grid(scaledYear = unique(Wrybill$scaledYear),
+                                     Year = unique(Wrybill$Year),
+                                     section_number = factor(seq(1,5))) %>%
+  left_join(mean_days_since_flood_key) %>%
+  mutate(scaledMeanFlow = mean(meanFlow))
 
-ggplot(Wrybill, aes(x = Year, y = (Number/(mean_daily_surveyors*Hectares)))) +
-  ylab("Wrybill per Surveyor*Hectare") + xlab("Year") +
+Wrybill_pred <- Wrybill_pred %>%mutate(Conditional = predict(Wrybill_testMod, type = "response", newdata = Wrybill_pred, re.form = NULL),
+         Marginal = predict(Wrybill_testMod, type = "response", newdata = Wrybill_pred, re.form = NA)) %>%
+  pivot_longer(cols = c(Conditional, Marginal), names_to = "type", values_to = "preds") %>%
+  mutate(species = "Wrybill")
+
+wrybill_plot <- ggplot(Wrybill, aes(x = Year, y = (Number/(mean_daily_surveyors)))) +
+  ylab("Wrybill per Surveyor") + xlab("Year") +
   geom_point(aes(colour = section_number)) +
-  geom_line(data = wrybill_pred, aes(x = centeredYear + min(Year), y = preds, linetype = type,
+  geom_line(data = wrybill_pred, aes(x = (scaledYear * scaling_attributes$`scaled:scale`[1] + scaling_attributes$`scaled:center`[1]),
+                                     y = preds, linetype = type,
                                               size = type,
                                               color = ifelse(type == "Conditional",
                                                              section_number,
@@ -64,6 +84,19 @@ ggplot(Wrybill, aes(x = Year, y = (Number/(mean_daily_surveyors*Hectares)))) +
   scale_color_discrete(limits = c("1","2","3","4","5"), na.value = "black") +
   scale_size_manual("type", values = c(0.8,1.3), guide = "none") +
   scale_linetype_manual(values = c(2,1)) +
-  labs(colour = "Section Number", linetype = "Model") +
+  labs(colour = "Section Number", linetype = "Model",
+       title = bquote("Marginal"~ R^2== .(round(r2_Wrybill[1], 3))~
+                     "\nConditional"~ R^2== .(round(r2_Wrybill[2],3)))) +
   theme(panel.background = element_rect(fill = "white"),
-        panel.grid = element_line(colour = alpha("grey", 0.4)))
+        panel.grid = element_line(colour = alpha("grey", 0.4)),
+        plot.title = element_text(size = 11))
+
+# ggeffect
+
+wry_resp <- predict_response(wrybill_testMod, terms = "scaledYear")
+
+ggplot(wry_resp, aes(x = (x + 2021), y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
+  theme(plot.title = element_blank()) +
+  labs(x = "Year", y = "Predicted Wrybill per Surveyor")

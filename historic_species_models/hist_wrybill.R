@@ -1,5 +1,6 @@
 library(lme4)
 library(ggplot2)
+library(ggeffects)
 
 #source("prep_older_data.R")
 
@@ -87,6 +88,16 @@ ggplot(historic_Wrybill, aes(x = Year, y = (Number/(mean_daily_surveyors)))) +
                                                              section_number,
                                                              type))) +
   scale_color_discrete(limits = c("1","2","3","4","5"), na.value = "black") +
-  scale_size_manual("type", values = c(0.8,1.5), guide = "none") +
+  scale_size_manual("type", values = c(0.8,1.3), guide = "none") +
   scale_linetype_manual(values = c(2,1)) +
   labs(colour = "Section Number", linetype = "Model")
+
+# ggeffects
+hist_wry_resp <- predict_response(historic_wrybill_testMod, terms = "centeredYear")
+
+ggplot(hist_wry_resp, aes(x = (x + 1986), y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
+  theme(plot.title = element_blank()) +
+  labs(x = "Year", y = "Predicted Wrybill per Observer")
+  
