@@ -38,6 +38,7 @@ fixed_NB_df <- 16
 deviance(Black_billed_gull_fixed_slope_NB) / fixed_NB_df # good, use NB
 
 AIC(Black_billed_gull_random_slope_NB, Black_billed_gull_fixed_slope_NB)
+AICc(Black_billed_gull_random_slope_NB, Black_billed_gull_fixed_slope_NB)
 BIC(Black_billed_gull_random_slope_NB, Black_billed_gull_fixed_slope_NB)
 # Use fixed slope
 
@@ -63,6 +64,7 @@ Black_billed_gull_no_years <- glmer.nb(Number ~ (1 | section_number),
                                          data = Black_billed_gull)
 
 AIC(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only)
+AICc(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only)
 BIC(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only) # model better with interaction
 
 BBG_lrt <- lrtest(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only)

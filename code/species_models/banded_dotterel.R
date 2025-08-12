@@ -39,6 +39,7 @@ fixed_NB_df <- 16
 deviance(Banded_dotterel_fixed_slope_NB) / fixed_NB_df # good, use NB
 
 AIC(Banded_dotterel_random_slope_NB, Banded_dotterel_fixed_slope_NB)
+AICc(Banded_dotterel_random_slope_NB, Banded_dotterel_fixed_slope_NB)
 BIC(Banded_dotterel_random_slope_NB, Banded_dotterel_fixed_slope_NB)
 # Use fixed slope
 
@@ -64,6 +65,7 @@ Banded_dotterel_no_years <- glmer.nb(Number ~ (1 | section_number),
                                        data = Banded_dotterel)
 
 AIC(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)
+AICc(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)
 BIC(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only) # model better without interaction
 
 Banded_dotterel_lrt <- lrtest(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)

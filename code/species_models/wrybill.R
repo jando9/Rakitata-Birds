@@ -27,6 +27,7 @@ fixed_df <- 17
 deviance(Wrybill_fixed_slope) / fixed_df #ok
 
 AIC(Wrybill_random_slope, Wrybill_fixed_slope)
+AICc(Wrybill_random_slope, Wrybill_fixed_slope)
 BIC(Wrybill_random_slope, Wrybill_fixed_slope)
 # pretty close, maybe stick to simpler model?
 
@@ -52,6 +53,7 @@ Wrybill_no_years <- glmer(Number ~ (1 | section_number),
                             data = Wrybill)
 
 AIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)
+AICc(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)
 BIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only) 
 
 wrybill_lrt <- lrtest(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)

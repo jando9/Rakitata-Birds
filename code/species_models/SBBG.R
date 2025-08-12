@@ -39,6 +39,7 @@ fixed_NB_df <- 16
 deviance(SBBG_fixed_slope_NB) / fixed_NB_df # good
 
 AIC(SBBG_random_slope_NB, SBBG_fixed_slope_NB)
+AICc(SBBG_random_slope_NB, SBBG_fixed_slope_NB)
 BIC(SBBG_random_slope_NB, SBBG_fixed_slope_NB)
 # use fixed slope
 
@@ -64,6 +65,7 @@ SBBG_no_years <- glmer.nb(Number ~ (1 | section_number),
                             data = Southern_black_backed_gull)
 
 AIC(SBBG_year_flood_int, SBBG_year_flow_int, SBBG_year_flood, SBBG_year_flow, SBBG_years_only)
+AICc(SBBG_year_flood_int, SBBG_year_flow_int, SBBG_year_flood, SBBG_year_flow, SBBG_years_only)
 BIC(SBBG_year_flood_int, SBBG_year_flow_int, SBBG_year_flood, SBBG_year_flow, SBBG_years_only)
 
 SBBG_lrt <- lrtest(SBBG_year_flood_int, SBBG_year_flow_int, SBBG_year_flood, SBBG_year_flow, SBBG_years_only)

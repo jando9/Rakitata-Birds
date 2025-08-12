@@ -39,6 +39,7 @@ fixed_NB_df <- 16
 deviance(SIPO_fixed_slope_NB) / fixed_NB_df # good
 
 AIC(SIPO_random_slope_NB, SIPO_fixed_slope_NB)
+AICc(SIPO_random_slope_NB, SIPO_fixed_slope_NB)
 BIC(SIPO_random_slope_NB, SIPO_fixed_slope_NB)
 # use fixed slope
 
@@ -64,6 +65,7 @@ SIPO_no_years <- glmer.nb(Number ~ (1 | section_number),
                             data = South_Island_pied_oystercatcher)
 
 AIC(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only)
+AICc(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only)
 BIC(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only) # model better without interaction
 
 SIPO_lrt <- lrtest(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only)

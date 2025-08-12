@@ -38,6 +38,7 @@ fixed_NB_df <- 16
 deviance(BFT_fixed_slope_NB) / fixed_NB_df # good, use NB
 
 AIC(BFT_random_slope_NB, BFT_fixed_slope_NB)
+AICc(BFT_random_slope_NB, BFT_fixed_slope_NB)
 BIC(BFT_random_slope_NB, BFT_fixed_slope_NB)
 # Use simpler model
 
@@ -63,6 +64,7 @@ BFT_no_years <- glmer.nb(Number ~ (1 | section_number),
                            data = Black_fronted_tern)
 
 AIC(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only)
+AICc(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only)
 BIC(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only) # use years only
 
 BFT_lrt <- lrtest(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only)

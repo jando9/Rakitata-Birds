@@ -39,6 +39,7 @@ fixed_NB_df <- 16
 deviance(Spur_winged_plover_fixed_slope_NB) / fixed_NB_df # okay
 
 AIC(Spur_winged_plover_random_slope_NB, Spur_winged_plover_fixed_slope_NB)
+AICc(Spur_winged_plover_random_slope_NB, Spur_winged_plover_fixed_slope_NB)
 BIC(Spur_winged_plover_random_slope_NB, Spur_winged_plover_fixed_slope_NB)
 # use fixed slope
 
@@ -64,6 +65,7 @@ Spur_winged_plover_no_years <- glmer.nb(Number ~ (1 | section_number),
                                           data = Spur_winged_plover)
 
 AIC(Spur_winged_plover_year_flood_int, Spur_winged_plover_year_flow_int, Spur_winged_plover_year_flood, Spur_winged_plover_year_flow, Spur_winged_plover_years_only)
+AICc(Spur_winged_plover_year_flood_int, Spur_winged_plover_year_flow_int, Spur_winged_plover_year_flood, Spur_winged_plover_year_flow, Spur_winged_plover_years_only)
 BIC(Spur_winged_plover_year_flood_int, Spur_winged_plover_year_flow_int, Spur_winged_plover_year_flood, Spur_winged_plover_year_flow, Spur_winged_plover_years_only) # close but not int better
 
 SpurWing_lrt <- lrtest(Spur_winged_plover_year_flood_int, Spur_winged_plover_year_flow_int, Spur_winged_plover_year_flood, Spur_winged_plover_year_flow, Spur_winged_plover_years_only)
