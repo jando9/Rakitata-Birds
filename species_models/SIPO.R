@@ -59,9 +59,14 @@ SIPO_year_flow <- glmer.nb(Number ~ scaledYear + scaledMeanFlow + (1 | section_n
 SIPO_years_only <- glmer.nb(Number ~ scaledYear + (1 | section_number),
                                        offset = log(mean_daily_surveyors),
                                        data = South_Island_pied_oystercatcher)
+SIPO_no_years <- glmer.nb(Number ~ (1 | section_number),
+                            offset = log(mean_daily_surveyors),
+                            data = South_Island_pied_oystercatcher)
 
 AIC(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only)
 BIC(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only) # model better without interaction
+
+SIPO_lrt <- lrtest(SIPO_year_flood_int, SIPO_year_flow_int, SIPO_year_flood, SIPO_year_flow, SIPO_years_only)
 
 r.squaredGLMM(SIPO_year_flow)
 

@@ -58,9 +58,14 @@ Black_billed_gull_year_flow <- glmer.nb(Number ~ scaledYear + scaledMeanFlow + (
 Black_billed_gull_years_only <- glmer.nb(Number ~ scaledYear + (1 | section_number),
                            offset = log(mean_daily_surveyors),
                            data = Black_billed_gull)
+Black_billed_gull_no_years <- glmer.nb(Number ~ (1 | section_number),
+                                         offset = log(mean_daily_surveyors),
+                                         data = Black_billed_gull)
 
 AIC(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only)
 BIC(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only) # model better with interaction
+
+BBG_lrt <- lrtest(Black_billed_gull_year_flood_int, Black_billed_gull_year_flow_int, Black_billed_gull_year_flood, Black_billed_gull_year_flow, Black_billed_gull_years_only)
 
 
 r.squaredGLMM(Black_billed_gull_year_flow)

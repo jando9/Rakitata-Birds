@@ -6,6 +6,7 @@ library(ggplot2)
 library(lattice)
 library(afex) #checking convergence issues
 library(MuMIn)
+library(lmtest)
 
 source("code/functions.R")
 
@@ -142,5 +143,5 @@ mean_days_since_flood_key <- data.frame(Year = Wrybill$Year,
 # # flow
 # ggplot(data = flow_data, aes(x = date, y = flow, colour= flooding)) +
 #   geom_line()
-s
+
 

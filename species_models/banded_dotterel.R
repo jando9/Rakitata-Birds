@@ -1,4 +1,4 @@
-#source("code/read_organise_data.R")
+source("code/read_organise_data.R")
 library(lme4)
 
 ggplot(data = Banded_dotterel,
@@ -59,18 +59,22 @@ Banded_dotterel_year_flow <- glmer.nb(Number ~ scaledYear + scaledMeanFlow + (1 
 Banded_dotterel_years_only <- glmer.nb(Number ~ scaledYear + (1 | section_number),
                             offset = log(mean_daily_surveyors),
                             data = Banded_dotterel)
+Banded_dotterel_no_years <- glmer.nb(Number ~ (1 | section_number),
+                                       offset = log(mean_daily_surveyors),
+                                       data = Banded_dotterel)
 
 AIC(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)
 BIC(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only) # model better without interaction
 
-r.squaredGLMM(Banded_dotterel_year_flow)
+Banded_dotterel_lrt <- lrtest(Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)
+
+r.squaredGLMM(Banded_dotterel_year_flow, Banded_dotterel_year_flood_int, Banded_dotterel_year_flow_int, Banded_dotterel_year_flood, Banded_dotterel_year_flow, Banded_dotterel_years_only)
 
 summary(Banded_dotterel_years_only)
 
 
 Banded_dotterel_testMod <- Banded_dotterel_years_only
 r2_Banded_dotterel <- data.frame(R2M = r.squaredGLMM(Banded_dotterel_testMod)[3,1],R2C = r.squaredGLMM(Banded_dotterel_testMod)[3,2], species = "Banded dotterel")
-
 
 # Visualisation of Model -------------------------------------------------------
 

@@ -47,9 +47,14 @@ Wrybill_year_flow <- glmer(Number ~ scaledYear + scaledMeanFlow + (1 | section_n
 Wrybill_years_only <- glmer(Number ~ scaledYear + (1 | section_number),
                      offset = log(mean_daily_surveyors), family = "poisson",
                      data = Wrybill)
+Wrybill_no_years <- glmer(Number ~ (1 | section_number),
+                            offset = log(mean_daily_surveyors), family = "poisson",
+                            data = Wrybill)
 
 AIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)
 BIC(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only) 
+
+wrybill_lrt <- lrtest(Wrybill_year_flood_int, Wrybill_year_flow_int, Wrybill_year_flood, Wrybill_year_flow, Wrybill_years_only)
 
 r.squaredGLMM(Wrybill_year_flow)
 

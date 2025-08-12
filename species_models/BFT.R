@@ -58,9 +58,14 @@ BFT_year_flow <- glmer.nb(Number ~ scaledYear + scaledMeanFlow + (1 | section_nu
 BFT_years_only <- glmer.nb(Number ~ scaledYear + (1 | section_number),
                             offset = log(mean_daily_surveyors),
                             data = Black_fronted_tern)
+BFT_no_years <- glmer.nb(Number ~ (1 | section_number),
+                           offset = log(mean_daily_surveyors),
+                           data = Black_fronted_tern)
 
 AIC(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only)
 BIC(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only) # use years only
+
+BFT_lrt <- lrtest(BFT_year_flood_int, BFT_year_flow_int, BFT_year_flood, BFT_year_flow, BFT_years_only)
 
 r.squaredGLMM(BFT_year_flow)
 
