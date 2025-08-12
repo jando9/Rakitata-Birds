@@ -8,7 +8,7 @@ library(simglm) # for glm power analysis
 source("code/read_organise_data.R")
 
 # Source Test Models
-model_files <- list.files(path = "species_models", full.names = T)
+model_files <- list.files(path = "code/species_models", full.names = T)
 sapply(model_files, source)
 
 # Power analysis ---------------------------------------------------------------
